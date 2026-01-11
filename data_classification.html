@@ -1,0 +1,287 @@
+{% extends "template_v2.html" %}
+{% block content %}
+
+<style>
+.gallery-container {
+    display: grid;
+    grid-template-columns:  repeat(4, 1fr);
+    gap: 15px;
+    padding: 20px;
+}
+
+.image-card {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    background: #fff;
+    cursor: pointer;
+}
+
+.image-card img {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    display: block;
+}
+
+.image-caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 14px;
+    line-height: 1.4;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+}
+
+.image-card:hover .image-caption {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.image-card img {
+    height: 280px;
+    transition: transform 0.3s ease;
+}
+
+.image-card:hover img {
+    transform: scale(1.05);
+}
+
+.pagination-modern {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin: 40px 0;
+    flex-wrap: wrap;
+}
+
+.page-link {
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+    text-decoration: none;
+    color: #0d6efd;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.page-link:hover {
+    background: #0d6efd;
+    color: #fff;
+}
+
+.page-link.active {
+    background: #0d6efd;
+    color: #fff;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.page-ellipsis {
+    padding: 0 6px;
+    color: #6c757d;
+}
+
+
+.card-wrapper {
+    position: relative;
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-wrapper:hover {
+    transform: translateY(-4px);
+}
+
+.vote-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    
+}
+
+.btn-vote {
+    background: #ffffff;
+    border: 2px solid #0d6efd;
+    color: #0d6efd;
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(13,110,253,0.25);
+    transition: all 0.25s ease;
+}
+
+.btn-vote i {
+    font-size: 15px;
+}
+
+.btn-vote:hover {
+    background-color: #0d6efd;
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.btn-vote.voted {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+.btn-vote.voted:hover {
+    background-color: #084298;
+}
+
+.btn-vote.locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.btn-vote.locked:hover {
+    transform: none;
+    background: #0d6efd;
+}
+
+.cursor-default {
+    cursor: default !important;
+}   
+
+.section-header {
+    margin: 30px 0 10px;
+}
+
+.section-title {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #0d6efd, #6610f2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.section-subtitle {
+    font-size: 14px;
+    color: #6c757d;
+    margin-top: 6px;
+}
+
+
+</style>
+
+<div class="section-header text-center">
+    <h2 class="section-title">Classification Data</h2>
+    <p class="section-subtitle">
+        Curated image annotations for computer vision research
+    </p>
+</div>
+
+<div class="gallery-container">
+    {% for img in images %}
+    <div class="card-wrapper"> {% if user.is_superuser or request.user.groups.all.0.name == 'CVs' %}
+            <a href="{% url 'edit_caption' img.id %}" class="text-decoration-none text-dark">
+        {% else %}
+            <div class="text-decoration-none text-dark cursor-default">
+        {% endif %}
+
+            <div class="image-card">
+                <img src="{{ MEDIA_URL }}processed_images_102_split/{{ img.image_path }}" alt="{{ img.image_name }}">
+                <div class="image-caption">
+                    <div>{{ img.caption }}</div>
+                    {% with last_edit=img.edit_histories.first %}
+                        {% if last_edit %}
+                            <small style="font-size: 10px; color: #ccc;">
+                                Lasted fix by: {{ last_edit.user.username }} - {{ last_edit.changed_at|date:"d/m/Y" }}
+                            </small>
+                        {% endif %}
+                    {% endwith %}
+                    
+                    {% if user.is_superuser or request.user.groups.all.0.name == 'CVs' %}
+                        <small class="d-block mt-1 text-warning">(Click to modify)</small>
+                    {% else %}
+                        <small class="d-block mt-1 text-danger">(Only Experts can modify)</small>
+                    {% endif %}
+                </div>
+            </div>
+
+        {% if user.is_superuser or request.user.groups.all.0.name == 'CVs' %}
+            </a>
+        {% else %}
+            </div>
+        {% endif %}
+
+        <div class="vote-wrapper">
+            <button id="vote-btn-{{ img.id }}" 
+                    onclick="sendVote({{ img.id }})" 
+                    class="btn-vote {% if img.id in voted_image_ids %}voted{% endif %}">
+                <i class="bi bi-hand-thumbs-up-fill"></i>
+                <span id="vote-count-{{ img.id }}">{{ img.votes }}</span>
+            </button>
+        </div>
+    </div>  
+    {% endfor %}
+</div>
+
+<div class="pagination pagination-modern">
+    {% if page_obj.has_previous %}
+        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Trước</a>
+    {% endif %}
+
+    {% for num in page_obj.paginator.page_range %}
+        {% if num == page_obj.number %}
+            <span class="page-link active">{{ num }}</span>
+        {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+        {% elif num == page_obj.number|add:"-4" or num == page_obj.number|add:"4" %}
+            <span class="page-ellipsis">…</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if page_obj.has_next %}
+        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sau</a>
+    {% endif %}
+</div>  
+
+<script>
+function sendVote(imgId) {
+    const btn = document.getElementById(`vote-btn-${imgId}`);
+    if (btn.disabled) return;
+    const countSpan = document.getElementById(`vote-count-${imgId}`);
+
+    fetch(`/vote/${imgId}/`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            countSpan.innerText = data.new_votes;
+            if (data.status === 'voted') {
+                btn.classList.add('voted'); 
+            } else {
+                btn.classList.remove('voted'); 
+            }
+        }
+    })
+    .catch(err => {
+        alert("Vui lòng đăng nhập để thực hiện chức năng này!");
+    });
+}
+</script>
+
+{% endblock %}
