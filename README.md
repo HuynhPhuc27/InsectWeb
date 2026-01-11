@@ -6,6 +6,7 @@ Model Architecture:
   + Vision: Vision Transformer (ViT).
   + Text: BERT (Bidirectional Encoder Representations from Transformers).
   + Fusion: One-way Cross-Attention mechanism.
+
 The research primarily utilizes the IP102 dataset, a large-scale benchmark for insect recognition: Contains over 75,000 images across 102 species of common pests.
 The project is developed and deployed using the following technologies:
   + Deep Learning Framework: PyTorch (utilizing pretrained ViT and BERT backbones).
