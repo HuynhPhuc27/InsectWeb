@@ -56,4 +56,3 @@ for img_file in image_files:
     except Exception as e:
         print(f"Lỗi với {img_file}: {e}")
 
-print(f"\n Caption đã lưu hoàn thành")
