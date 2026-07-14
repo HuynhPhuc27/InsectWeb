@@ -11,6 +11,7 @@ The proposed approach integrates Vision Transformer (ViT), BERT, and Patch-wise 
 ## Demo
 
 The system allows users to upload insect images and receive species prediction with detailed information.
+
 ![Demo](assets/demo.gif)
 
 ## Overview
@@ -26,4 +27,20 @@ This project explores a multimodal approach by combining:
 
 The system aims to improve insect recognition by leveraging complementary information from images and descriptions.
 
+## Architecture
 
+The proposed architecture consists of three main components:
+
+1. Visual Encoder
+   - Vision Transformer (ViT)
+   - Extracts image patch representations
+
+2. Text Encoder
+   - BERT
+   - Generates semantic text embeddings
+
+3. Multimodal Fusion
+   - Patch-wise Cross Attention
+   - Learns interaction between image patches and text features
+  
+![Architecture](assets/Overview architecture (1).png)
