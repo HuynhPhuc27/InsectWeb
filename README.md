@@ -44,3 +44,30 @@ The proposed architecture consists of three main components:
    - Learns interaction between image patches and text features
   
 ![Architecture](assets/architecture.png)
+
+
+## Dataset
+
+The model was trained using insect image data based on IP102 dataset.
+
+Additional textual descriptions were collected/generated from:
+
+- Wikipedia
+- GBIF metadata
+- Image captioning model
+
+Dataset statistics:
+
+| Item | Value |
+|---|---|
+| Species | 102 |
+| Images | ~14k |
+| Modalities | Image + Text |
+
+Dataset link: 
++ Caption Llava: https://drive.google.com/file/d/1vaGhS3sxq6hlbFoiyTszXtzut4ye9LG1/view?usp=drive_link
++ Caption Florence: https://drive.google.com/drive/folders/1vIJBN2k60fq3bio47fXFlsUIGLo0FASe?usp=drive_link
++ Image: https://drive.google.com/file/d/1C5u95rQAJ9PgIzVTjYFG4ZdIZ-nMRC6h/view?usp=drive_link
++ Label: https://drive.google.com/file/d/1rk0fl_CkouzrYGjDV1wD46JeVLIUM4xQ/view?usp=drive_link
+
+
