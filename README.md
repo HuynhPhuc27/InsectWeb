@@ -11,7 +11,7 @@ The proposed approach integrates Vision Transformer (ViT), BERT, and Patch-wise 
 ## Demo
 
 The system allows users to upload insect images and receive species prediction with detailed information.
-
+![Demo](assets/demo.gif)
 
 ## Overview
 
