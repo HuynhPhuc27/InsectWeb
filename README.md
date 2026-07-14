@@ -43,4 +43,4 @@ The proposed architecture consists of three main components:
    - Patch-wise Cross Attention
    - Learns interaction between image patches and text features
   
-![Architecture](assets/Overview architecture (1).png)
+![Architecture](assets/architecture.png)
