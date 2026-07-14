@@ -1,0 +1,358 @@
+{% extends "template_v2.html" %}
+{% block content %}
+
+
+<style>
+
+.classify-card {
+    max-width: 720px;
+    margin: 24px auto;
+    padding: 24px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+}
+
+.upload-container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.upload-top{
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    z-index: 2;
+}
+
+.upload-label{
+    display: inline-block;
+    padding: 8px 14px;
+    border-radius: 20px;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.upload-box{
+    position: relative;
+    width: 400px;
+    height: 280px;
+    border: 2px dashed #6c757d;
+    border-radius: 16px;
+    background-color: #f8f9fa;
+    overflow: hidden;   
+    transition: all 0.3s ease;
+}
+
+.upload-box:hover{
+    border-color: #0d6efd;
+}
+
+.image-preview{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    
+    border-radius: 16px;
+}
+.upload-btn{
+    display: inline-block;
+    background: #0d6efd;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.3s ease;
+}
+
+.upload-btn:hover{
+    background: #0b5ed7;
+}
+
+.upload-hint{
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.upload-rectangle {
+    width: 350px;
+    height: 230px;
+    border: 2px dashed #aaa;
+    border-radius: 16px;
+    background: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+
+.result-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.hidden {
+  display: none;
+}
+
+.popup-content {
+  background: white;
+  padding: 20px;
+  border-radius: 15px;
+  width: 80%;
+  max-width: 900px;
+  text-align: center;
+  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+}
+
+.image-container {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 15px;
+}
+
+.popup-img {
+  width: 300px;
+  height: 300px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+}
+
+.close-btn {
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  font-size: 25px;
+  color: #555;
+  cursor: pointer;
+}
+
+</style>
+<div class="classify-card">
+    <div class="text-center mb-3">
+        <h3 class="fw-bold">Image Classification</h3>
+        <P class="text-muted mb-0">Upload an insect image and add optional notes</P>
+    </div>
+
+    <form id = "classify-form" method="POST" action="{% url 'classify' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="upload-container text-center">
+            <p class="fw-bold mb-2">Choose the insect image you want</p>
+            <div class="upload-box">
+                <img id="image-preview" alt="Preview" class="preview-img" src="/media/documents/default-image-icon-4595376-512.png" >
+            </div>
+
+            <label for="image-input" class="upload-btn mt-3">Upload Image</label>
+            <input type="file" id="image-input" name="image" accept="image/png, image/jpeg" hidden>
+        </div>
+
+        <div class="file-name" id="fileName"></div>
+
+        <div class="text-box">
+            <label for="text" class="form-label fw-semibold">Description</label>
+            <textarea class="form-control" id="text" name="text" rows="4" placeholder="Enter any notes about the insect...">{{ description }}</textarea>
+        </div>
+
+        <div class="btn-center mt-2 " align="center">
+            <button type="submit" class="btn btn-primary px-4">Classify</button>
+        </div>
+    </form>
+
+    <div id="result-popup" class="result-popup hidden">
+        <div class="popup-content">
+            <span class="close-btn" onclick="closePopup()">&times;</span>
+            <h3>Classification Result</h3>
+            <div class="image-container">
+            <div>
+                <h4>Original Image</h4>
+                <img id="popup-original" src="" alt="Original" class="popup-img">
+            </div>
+            <div>
+                <h4>Visualized Result</h4>
+                <img id="popup-visualized" src="" alt="Visualized" class="popup-img">
+            </div>
+            </div>
+            <p><strong>Predicted Class:</strong> <span id="popup-class"></span></p>
+            <p><strong>Confidence:</strong> <span id="popup-confidence"></span></p>
+
+            <div class="mt-4 text-center">
+                <button type="button" class="btn btn-success me-3" onclick="saveHistory()">Save</button>
+                <button type="button" class="btn btn-secondary" onclick="cancelResult()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+
+    function closePopup(){
+        document.getElementById("result-popup").classList.add("hidden");
+    }
+
+    async function cancelResult() {
+        const originalSrc = document.getElementById("popup-original").getAttribute("src");
+        const visualizedSrc = document.getElementById("popup-visualized").getAttribute("src");
+
+        if (!originalSrc || originalSrc.includes('default-image-icon')) {
+        closePopup();
+        return;
+    }
+
+    try {
+        const response = await fetch("/delete_temp_images/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify({
+                original: originalSrc,
+                visualized: visualizedSrc
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            alert("Success!");
+           
+            document.getElementById("image-preview").src = "/media/documents/default-image-icon-4595376-512.png";
+            document.getElementById("classify-form").reset();
+            closePopup();
+        } else {
+            alert("Server error: " + (result.error || "Unknown"));
+        }
+    } catch (err) {
+        
+        console.error("Error when calling API:", err);
+        alert("Can't connect with server to delete image");
+    }
+
+    }
+    async function saveHistory(){
+        const original = document.getElementById("popup-original").src.replace(/\\/g, "/");;
+        const visualized = document.getElementById("popup-visualized").src.replace(/\\/g, "/");;
+        const predClass = document.getElementById("popup-class").textContent;
+        const confidence = document.getElementById("popup-confidence").textContent;
+        const description = document.getElementById("text").value;
+        
+        const data ={
+            original_image: original,
+            visualized_image: visualized,
+            predicted_class: predClass,
+            confidence: parseFloat(confidence),
+            description: description
+        };
+
+        const response = await fetch("/save_history/", {
+            method:"POST",
+            headers:{
+                "Content-Type": "application/json",
+                "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result =await response.json();
+        if (result.success){
+            alert("Success in saving history!");
+            closePopup();
+        } else{
+            alert("Error save: " + (result.error));
+        }
+    }
+    document.getElementById("image-input").addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById("image-preview");
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img =new Image();
+            img.onload = function() {
+                const Max_width = 400;
+                const Max_height = 280;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > Max_width) {
+                        height *= Max_width / width;
+                        width = Max_width;
+                    }
+                } else {
+                    if (height > Max_height) {
+                        width *= Max_height / height;
+                        height = Max_height;
+                    }
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+                document.getElementById("image-preview").src = canvas.toDataURL("image/png", 0.9);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    } else{
+        preview.src = "media/documents/default-image-icon-4595376-512.png";
+    }
+    });
+
+    document.getElementById("classify-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const response = await fetch("/classify/", {
+            method: "POST",
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            alert(result.error);
+            return;
+        }
+
+        document.getElementById("popup-original").src = result.original;
+        document.getElementById("popup-visualized").src = result.visualized;
+        document.getElementById("popup-class").textContent = result.pred_class;
+        document.getElementById("popup-confidence").textContent = result.confidence.toFixed(3);
+
+        document.getElementById("result-popup").classList.remove("hidden");
+    });
+
+    function closePopup() {
+        document.getElementById("result-popup").classList.add("hidden");
+    }
+</script>
+
+{% endblock %}

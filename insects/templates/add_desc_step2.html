@@ -1,0 +1,123 @@
+{% extends "template_v2.html" %}
+{% block content %}
+{% load custom_filters %}
+
+<div class="container py-3">
+    <div class="d-flex justify-content-center">
+        <p class="fw-bold fs-2">Insect Image Description</p>
+    </div>
+    <div>
+        <hr>
+    </div>
+    <div class="row">
+        <!-- Thông tin phân loại khoa học -->
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-header text-center fw-bold bg-primary text-white">
+                    Insect Information
+                </div>
+                <div class="card-body">
+                    <p><strong>Scientific Name:</strong> {{ specie.ename }}</p>
+                    <p><strong>Common Name:</strong> {{ specie.name }}</p>
+                    <p class="fw-bold">Scientific Classification:</p>
+                    <ul class="list-unstyled">
+                        <li><strong>Kingdom:</strong> {{ specie.genus.family.order.class_field.phylum.kingdom.ename }}</li>
+                        <li><strong>Phylum:</strong> {{ specie.genus.family.order.class_field.phylum.ename }}</li>
+                        <li><strong>Class:</strong> {{ specie.genus.family.order.class_field.ename }}</li>
+                        <li><strong>Order:</strong> {{ specie.genus.family.order.ename }}</li>
+                        <li><strong>Family:</strong> {{ specie.genus.family.ename }}</li>
+                        <li><strong>Genus:</strong> {{ specie.genus.ename }}</li>
+                        <li><strong>Species:</strong> {{ specie.ename }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hình ảnh & Mô tả -->
+        <div class="col-md-9">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img class="img-thumbnail" src="{{ MEDIA_URL }}{{ img_info.url }}" style="max-width: 600px;" alt="Insect Image">
+                    </div>
+
+                    <h4 class="fw-bold text-primary">Image Description</h4>
+                    <div class="border p-3 bg-light rounded">
+                        {% if img_info.desc %}
+                            <p>{{ img_info.desc|linebreaksbr }}</p>
+                        {% else %}
+                            <p class="text-muted">No description available.</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Form thêm mô tả -->
+                    <hr>
+                    <h4 class="fw-bold text-primary">Thêm mô tả mới</h4>
+                    <form action="{% url 'append_desc_handler' img_info.img_id %}" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">New Image Description:</label>
+                            <textarea class="form-control" name="new_desc" rows="4" placeholder="Enter new description..." required></textarea>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-success">Add Description</button>
+                        </div>
+                    </form>
+
+                    <!-- Lịch sử đóng góp -->
+                    <hr>
+                    <h4 class="fw-bold text-primary">Contribution History</h4>
+                    {% if request_desc %}
+                        <div class="list-group">
+                            {% for request in request_desc %}
+                                <div class="list-group-item">
+                                    <p><strong>Description:</strong> {{ request.desc|linebreaksbr }}</p>
+                                    <p><strong>Submission Time:</strong> {{ request.created_at|date:"Y-m-d H:i:s" }}</p>
+                                    <p><strong>Status:</strong> {{ request.status|format_status }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No contribution history.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Modal thông báo -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="successModalLabel">Success!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Description submitted!
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="closeModalBtn">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Script kiểm tra URL -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Kiểm tra nếu URL có tham số 'success'
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('success')) {
+        var myModal = new bootstrap.Modal(document.getElementById('successModal'));
+        myModal.show();
+    }
+
+    // Khi đóng modal, load lại trang để xóa tham số 'success'
+    document.getElementById("closeModalBtn").addEventListener("click", function() {
+        window.location.href = window.location.pathname + "?img_id={{ img_info.img_id }}";
+    });
+});
+</script>
+
+{% endblock %}

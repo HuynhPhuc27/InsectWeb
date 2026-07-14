@@ -1,0 +1,221 @@
+{% extends "template_v2.html" %}
+{% block content %}
+<div class="bg-light">
+    <div class="container py-5">
+        <div class="d-flex justify-content-center">
+            <p class="fw-bold fs-2">Xét Duyệt Hình Ảnh Mới</p>
+        </div>
+        <div>
+            <hr>
+        </div>
+
+        <div class="row g-4">
+            <!-- Thông tin phân loại -->
+            <div class="col-md-3">
+                <div class="card shadow-sm">
+                    <div class="card-header text-center fw-bold bg-primary text-white">
+                        Thông tin côn trùng
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Tên khoa học:</strong> {{ specie.ename }}</p>
+                        <p><strong>Tên thường gọi:</strong> {{ specie.name }}</p>
+                        <p><strong>Phân loại khoa học:</strong></p>
+                        <ul class="list-unstyled">
+                            <li><strong>Giới (Kingdom):</strong> {{ specie.genus.family.order.class_field.phylum.kingdom.ename }}</li>
+                            <li><strong>Ngành (Phylum):</strong> {{ specie.genus.family.order.class_field.phylum.ename }}</li>
+                            <li><strong>Lớp (Class):</strong> {{ specie.genus.family.order.class_field.ename }}</li>
+                            <li><strong>Bộ (Order):</strong> {{ specie.genus.family.order.ename }}</li>
+                            <li><strong>Họ (Family):</strong> {{ specie.genus.family.ename }}</li>
+                            <li><strong>Chi (Genus):</strong> {{ specie.genus.ename }}</li>
+                            <li><strong>Loài (Species):</strong> {{ specie.ename }}</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="col-md-9">
+                <div class="bg-white p-3 shadow rounded">
+                    <div class="d-flex justify-content-center">
+                        <canvas id="bboxCanvas" class="border border-secondary shadow rounded"></canvas>
+                    </div>
+                </div>
+                <form action="{% url 'verify_new_image_request' request_item.request_img_id %}" method="post" class="p-4 bg-white shadow rounded">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label for="description" class="form-label fw-bold text-primary">Mô tả chi tiết</label>
+                        <textarea class="form-control border border-primary shadow-sm" id="description" name="description" rows="4" placeholder="Nhập mô tả chi tiết...">{{ request_item.desc }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="species_Id" class="form-label fw-bold">Chọn loài côn trùng</label>
+                        <select name="species_id" id="species_Id" class="form-select" required>
+                            <option value="{{ request_item.insects_id.insects_id }}">
+                                {{ request_item.insects_id.insects_id }} - {{ request_item.insects_id.name }} - {{ request_item.insects_id.vi_name }}
+                            </option>
+                            {% for item_species in species_list %}
+                                <option value="{{ item_species.insects_id }}">{{ item_species.insects_id }} - {{ item_species.name }} - {{ item_species.vi_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="text-center">
+                        {% if has_verified %}
+                            <div class="alert alert-success">Bạn đã xét duyệt hình ảnh này!</div>
+                            <a class="btn btn-primary" href="{% url 'cv_verify_new_image' %}">Trở về</a>
+                        {% else %}
+                            {% if request_item.status == 'verified' %}
+                                <button type="button" class="btn btn-success" disabled>Đã duyệt</button>
+                                <a class="btn btn-primary" href="{% url 'cv_verify_new_image' %}">Trở về</a>
+                            {% else %}
+                                <button type="submit" id="acceptBtn" name="action" value="accept" class="btn btn-success px-4 me-3 shadow">
+                                    <i class="bi bi-check-circle"></i> Xét duyệt
+                                </button>
+                                <button type="button" id="rejectBtn" class="btn btn-danger px-4 shadow">
+                                    <i class="bi bi-x-circle"></i> Từ chối
+                                </button>
+                            {% endif %}
+                        {% endif %}
+
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- Modal xác nhận hành động -->
+<div class="modal fade" id="resultModal" tabindex="-1" aria-labelledby="resultModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content shadow">
+      <div class="modal-header">
+        <h5 class="modal-title" id="resultModalLabel">Thông báo</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center fw-bold">
+        {% if verify_result == "verified" %}
+          Hình ảnh đã được xét duyệt thành công!
+        {% elif verify_result == "rejected" %}
+          Hình ảnh đã bị từ chối!
+        {% elif verify_result == "pending" %}
+          Hình ảnh đã được xét duyệt, cần thêm chuyên gia khác.
+        {% endif %}
+      </div>
+      <div class="modal-footer justify-content-center">
+        <button type="button" class="btn btn-primary" id="modal-ok-btn">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.3.0/fabric.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvasElement = document.getElementById('bboxCanvas');
+    const canvas = new fabric.Canvas(canvasElement);
+    const imgSrc = "{{ bbox_img_url }}";
+    const bboxData = {{ bbox_data|safe }};
+
+    let originalWidth, originalHeight, scaleFactor;
+
+    fabric.Image.fromURL(imgSrc, function(oImg) {
+        let maxSize = 500; // Kích thước tối đa để scale
+        originalWidth = oImg.width;
+        originalHeight = oImg.height;
+        scaleFactor = Math.min(maxSize / originalWidth, maxSize / originalHeight);
+
+        oImg.set({
+            left: 0,
+            top: 0,
+            scaleX: scaleFactor,
+            scaleY: scaleFactor,
+            selectable: false
+        });
+
+        canvas.setBackgroundImage(oImg, canvas.renderAll.bind(canvas));
+        canvas.setWidth(originalWidth * scaleFactor);
+        canvas.setHeight(originalHeight * scaleFactor);
+
+        bboxData.forEach(bbox => {
+            let { cls, x, y, w, h } = convertYOLOtoPixel(bbox, originalWidth, originalHeight);
+            let rect = new fabric.Rect({
+                left: x * scaleFactor,
+                top: y * scaleFactor,
+                width: w * scaleFactor,
+                height: h * scaleFactor,
+                fill: 'transparent',
+                stroke: 'red',
+                strokeWidth: 2,
+                selectable: true,
+                hasRotatingPoint: true // Cho phép xoay
+            });
+            rect.classLabel = cls;
+            canvas.add(rect);
+        });
+    });
+
+    function convertYOLOtoPixel(bbox, imgWidth, imgHeight) {
+        let [cls, x, y, w, h] = bbox.split(" ").map(parseFloat);
+        return {
+            cls: cls,
+            x: (x - w / 2) * imgWidth,
+            y: (y - h / 2) * imgHeight,
+            w: w * imgWidth,
+            h: h * imgHeight
+        };
+    }
+
+    document.getElementById("acceptBtn").addEventListener("click", function () {
+        const speciesId = parseInt(document.getElementById("species_Id").value, 10);//Chuyen ve dang so nguyen
+        const description = document.getElementById("description").value;
+
+        let newBboxData = canvas.getObjects().map(obj => {
+            let bbox = obj.getBoundingRect(); // Lấy bbox thực tế
+            let xCenter = ((bbox.left + bbox.width / 2) / scaleFactor) / originalWidth;
+            let yCenter = ((bbox.top + bbox.height / 2) / scaleFactor) / originalHeight;
+            let width = (bbox.width / scaleFactor) / originalWidth;
+            let height = (bbox.height / scaleFactor) / originalHeight;
+
+            return `${speciesId-1} ${xCenter} ${yCenter} ${width} ${height}`;
+        });
+
+        fetch("{% url 'save_bbox' request_item.request_img_id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                bbox_lines: newBboxData,
+                species_id: speciesId,
+                description: description,
+            })
+        })
+    });
+    document.getElementById("rejectBtn").addEventListener("click", function () {
+        fetch("{% url 'verify_new_image_request' request_item.request_img_id %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: new URLSearchParams({
+                action: "reject",
+                species_id: document.getElementById("species_Id").value,
+                description: document.getElementById("description").value
+            })
+        })
+    });
+
+    {% if verify_result %}
+        var modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
+
+        document.getElementById('modal-ok-btn').addEventListener('click', function () {
+            window.location.href = "{% url 'cv_verify_new_image' %}";
+        });
+    {% endif %}
+
+});
+</script>
+{% endblock %}

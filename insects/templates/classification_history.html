@@ -1,0 +1,64 @@
+{% extends "template_v2.html" %}
+{% block content %}
+<div class="container py-3">
+    <div class="tab-pane fade show active" id="nav-class" role="tabpanel" aria-labelledby="nav-class-tab" tabindex="0">
+        <form method="GET" class="row mb-3 g-2 align-items-center">
+            <label class="fw-bold">Search:</label>
+            <div class="col-md-3">
+                <input type="text" name="search_class" class="form-control" placeholder="Sign name..."
+                       value="">
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Searching</button>
+                <a href="#" class="btn btn-secondary">Renew</a>
+            </div>
+        </form>
+        <div class="table-responsive" style="max-height: 550px; overflow-y: auto;">
+            <table class="table table-bordered table-striped">
+                <thead class="table-dark" style="position: sticky; top: 0; z-index: 10;">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Original image</th>
+                        <th scope="col">Visualized image</th>
+                        <th scope="col">Predicted class</th>
+                        <th scope="col">Confidence</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Created at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% if histories %}
+                    {% for i in histories %}
+                    <tr>
+                        <td class="text-center">{{ i.id }}</td>
+                        <td class="text-center">
+                            {% if i.original_image %}
+                                <img src="{{ i.original_image.url}}" alt = "original_image" width="50" height="50" style="object-fit: cover; border-radius: 8px;">
+                            {% else %}
+                                <span class="text-muted">No image</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="text-center">
+                            {% if i.original_image %}
+                            <img src="{{ i.visualize_image.url}}" alt = "original_image" width="50" height="50" style="object-fit: cover; border-radius: 8px;">
+                            {% else %}
+                                <span class="text-muted">No image</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="fw-semibold text-center">{{i.predicted_class}}</td>
+                        <td class="text-center">{{i.confidence|floatformat:3}}</td>
+                        <td>{{i.description|default:"-"}}</td>
+                        <td class="text-center">{{i.created_at|date:"d/m/Y H:i"}}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <td colspan="7" class="text-center text-muted">No history.</td>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

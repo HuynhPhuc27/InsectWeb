@@ -1,0 +1,108 @@
+{% extends "template_v2.html" %}
+{% block content %}
+<div class="container py-3">
+    <div class="d-flex justify-content-center">
+        <p class="fw-bold fs-2">Accept contributions of insect image descriptions</p>
+    </div>
+    <div>
+        <hr>
+    </div>
+    <div class="row">
+        <!-- Thông tin phân loại khoa học -->
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-header text-center fw-bold bg-primary text-white">
+                    Insect Information
+                </div>
+                <div class="card-body">
+                    <p><strong>Scientific Name:</strong> {{ specie.ename }}</p>
+                    <p><strong>Common Name:</strong> {{ specie.name }}</p>
+                    <p><strong>Scientific Classification:</strong></p>
+                    <ul class="list-unstyled">
+                        <li><strong>Kingdom:</strong> {{ specie.genus.family.order.class_field.phylum.kingdom.ename }}</li>
+                        <li><strong>Phylum:</strong> {{ specie.genus.family.order.class_field.phylum.ename }}</li>
+                        <li><strong>Class:</strong> {{ specie.genus.family.order.class_field.ename }}</li>
+                        <li><strong>Order:</strong> {{ specie.genus.family.order.ename }}</li>
+                        <li><strong>Family:</strong> {{ specie.genus.family.ename }}</li>
+                        <li><strong>Genus:</strong> {{ specie.genus.ename }}</li>
+                        <li><strong>Species:</strong> {{ specie.ename }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hình ảnh & mô tả -->
+        <div class="col-md-9">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img class="img-thumbnail" src="{{ MEDIA_URL }}{{ img_info.url }}" style="width: 600px;" alt="Insect Image">
+                    </div>
+
+                    <!-- Thông tin mô tả -->
+                    <div class="mb-3">
+                        <h4 class="fw-bold">Details</h4>
+                        <p class="text-muted">
+                            Submission Time: <strong>{{ request_item.created_at|date:"Y-m-d H:i:s" }}</strong> <br>
+                            Submitted By: <strong>{{ request_item.user.username }}</strong> <br>
+                            Description:
+                        </p>
+                        <div class="border p-3 bg-light rounded">
+                            <p class="fs-5">{{ request_item.desc|linebreaksbr }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Nút xác nhận hoặc từ chối -->
+                    <form action="{% url 'accept_desc_request' request_item.request_desc_id %}" method="post">
+                        {% csrf_token %}
+                        {% if messages or request_item.status == 'Accepted' or request_item.status == 'Rejected' %}
+                            <div class="text-center">
+                                <a class="btn btn-primary" href="{% url 'admin_desc_verify' %}">Go Back</a>
+                            </div>
+                        {% else %}
+                            <div class="text-center">
+                                <button type="submit" name="action" value="reject" class="btn btn-danger m-2">Reject</button>
+                                <button type="submit" name="action" value="accept" class="btn btn-success m-2">Accept</button>
+                            </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hiển thị modal khi có thông báo -->
+        {% if messages %}
+        <div class="modal fade" id="successModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header text-white">
+                        <h5 class="modal-title">Notification</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="redirectToVerifyPage()"></button>
+                    </div>
+                    <div class="modal-body">
+                        {% for message in messages %}
+                            <p>{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="redirectToVerifyPage()">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function redirectToVerifyPage() {
+                window.location.href = "{% url 'admin_desc_verify' %}";
+            }
+
+            // Chờ trang load xong rồi mới hiển thị modal để đảm bảo hiệu ứng
+            document.addEventListener("DOMContentLoaded", function() {
+                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+            });
+        </script>
+    {% endif %}
+</div>
+{% endblock %}
